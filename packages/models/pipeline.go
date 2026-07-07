@@ -18,24 +18,24 @@ const (
 )
 
 type Pipeline struct {
-	ID							string	 		`json:"id" gorm:"primaryKey"`
-	NAME						string	 		`json:"name"`
-	STATUS						PipelineStatus	`json:"status"`
-	DESCRIPTION					string	 		`json:"description"`
-	TOTAL_RECORDS				int    	 		`json:"total_records"`
-	PROCESSED_RECORDS			int    	 		`json:"processed_records"`
-	VALID_RECORDS				int    	 		`json:"valid_records"`
-	INVALID_RECORDS				int    	 		`json:"invalid_records"`
-	STARTED_AT					time.Time		`json:"started_at"`
-	COMPLETED_AT				time.Time		`json:"completed_at"`
+	ID               string         `json:"id" gorm:"primaryKey"`
+	Name             string         `json:"name"`
+	Status           PipelineStatus `json:"status"`
+	Description      string         `json:"description"`
+	TotalRecords     int            `json:"total_records"`
+	ProcessedRecords int            `json:"processed_records"`
+	ValidRecords     int            `json:"valid_records"`
+	InvalidRecords   int            `json:"invalid_records"`
+	StartedAt        time.Time      `json:"started_at"`
+	CompletedAt      time.Time      `json:"completed_at"`
 }
 
 func (p *Pipeline) BeforeCreate(tx *gorm.DB) error {
 	if p.ID == "" {
 		p.ID = uuid.NewString()
 	}
-	if p.STATUS == "" {
-		p.STATUS = StatusPending
+	if p.Status == "" {
+		p.Status = StatusPending
 	}
 	return nil
 }

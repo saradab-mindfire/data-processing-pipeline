@@ -19,10 +19,10 @@ func CreatePipeline(c *gin.Context) {
 	}
 
 	dbPipeline := models.Pipeline{
-		ID:         uuid.NewString(),
-		NAME:       "pipeline-" + time.Now().Format("20060102-150405"),
-		STATUS:     models.StatusProcessing,
-		STARTED_AT: time.Now(),
+		ID:        uuid.NewString(),
+		Name:      "pipeline-" + time.Now().Format("20060102-150405"),
+		Status:    models.StatusProcessing,
+		StartedAt: time.Now(),
 	}
 
 	if err := database.Instance.Create(&dbPipeline).Error; err != nil {
@@ -84,9 +84,9 @@ func GetPipelineProgress(c *gin.Context) {
 		return
 	}
 
-	processedRecords := dbPipeline.PROCESSED_RECORDS
-	validRecords := dbPipeline.VALID_RECORDS
-	invalidRecords := dbPipeline.INVALID_RECORDS
+	processedRecords := dbPipeline.ProcessedRecords
+	validRecords := dbPipeline.ValidRecords
+	invalidRecords := dbPipeline.InvalidRecords
 
 	if processed, valid, invalid, ok := worker.Progress(dbPipeline.ID); ok {
 		processedRecords = processed
@@ -95,20 +95,20 @@ func GetPipelineProgress(c *gin.Context) {
 	}
 
 	var percentage float64
-	if dbPipeline.TOTAL_RECORDS > 0 {
-		percentage = float64(processedRecords) / float64(dbPipeline.TOTAL_RECORDS) * 100
+	if dbPipeline.TotalRecords > 0 {
+		percentage = float64(processedRecords) / float64(dbPipeline.TotalRecords) * 100
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":                dbPipeline.ID,
-		"status":            dbPipeline.STATUS,
-		"total_records":     dbPipeline.TOTAL_RECORDS,
+		"status":            dbPipeline.Status,
+		"total_records":     dbPipeline.TotalRecords,
 		"processed_records": processedRecords,
 		"valid_records":     validRecords,
 		"invalid_records":   invalidRecords,
 		"percentage":        percentage,
-		"started_at":        dbPipeline.STARTED_AT,
-		"completed_at":      dbPipeline.COMPLETED_AT,
+		"started_at":        dbPipeline.StartedAt,
+		"completed_at":      dbPipeline.CompletedAt,
 	})
 }
 
@@ -119,7 +119,7 @@ func GetPipelineResults(c *gin.Context) {
 		return
 	}
 
-	if pipeline.STATUS != models.StatusCompleted {
+	if pipeline.Status != models.StatusCompleted {
 		c.JSON(http.StatusConflict, gin.H{"error": "results are not available until the pipeline has completed"})
 		return
 	}
@@ -132,12 +132,12 @@ func GetPipelineResults(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":                pipeline.ID,
-		"status":            pipeline.STATUS,
-		"total_records":     pipeline.TOTAL_RECORDS,
-		"processed_records": pipeline.PROCESSED_RECORDS,
-		"valid_records":     pipeline.VALID_RECORDS,
-		"invalid_records":   pipeline.INVALID_RECORDS,
-		"completed_at":      pipeline.COMPLETED_AT,
+		"status":            pipeline.Status,
+		"total_records":     pipeline.TotalRecords,
+		"processed_records": pipeline.ProcessedRecords,
+		"valid_records":     pipeline.ValidRecords,
+		"invalid_records":   pipeline.InvalidRecords,
+		"completed_at":      pipeline.CompletedAt,
 		"export_url":        exportURL,
 	})
 }
@@ -165,8 +165,8 @@ func CancelPipeline(c *gin.Context) {
 		return
 	}
 
-	if dbPipeline.STATUS == models.StatusCompleted || dbPipeline.STATUS == models.StatusCancelled || dbPipeline.STATUS == models.StatusFailed {
-		c.JSON(http.StatusConflict, gin.H{"error": "pipeline cannot be cancelled from status: " + string(dbPipeline.STATUS)})
+	if dbPipeline.Status == models.StatusCompleted || dbPipeline.Status == models.StatusCancelled || dbPipeline.Status == models.StatusFailed {
+		c.JSON(http.StatusConflict, gin.H{"error": "pipeline cannot be cancelled from status: " + string(dbPipeline.Status)})
 		return
 	}
 
@@ -179,8 +179,8 @@ func CancelPipeline(c *gin.Context) {
 
 	// No matching in-memory job (e.g. the server restarted since this
 	// pipeline started) - fall back to marking it cancelled directly.
-	dbPipeline.STATUS = models.StatusCancelled
-	dbPipeline.COMPLETED_AT = time.Now()
+	dbPipeline.Status = models.StatusCancelled
+	dbPipeline.CompletedAt = time.Now()
 	if err := database.Instance.Save(&dbPipeline).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

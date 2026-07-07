@@ -9,7 +9,7 @@ import (
 )
 
 func Validate(ctx context.Context, wg *sync.WaitGroup, pipelineID string, addValid, addInvalid func(), in <-chan shared.Record, out chan<- shared.Record) {
-	defer wg.Done() // tells run() this worker is done (see validateWg)
+	defer wg.Done() 
 
 	for {
 		select {

@@ -3,7 +3,6 @@ package dataio
 import (
 	"context"
 	"encoding/csv"
-	"fmt"
 	"sync"
 
 	"github.com/google/uuid"

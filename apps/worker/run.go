@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -69,12 +68,12 @@ func run(j *job, pipelineID string, req PipelineRequest) {
 
 	processed, valid, invalid := j.counts()
 	database.Instance.Model(&models.Pipeline{}).Where("id = ?", pipelineID).Updates(map[string]any{
-		"STATUS":            status,
-		"COMPLETED_AT":      time.Now(),
-		"TOTAL_RECORDS":     processed,
-		"PROCESSED_RECORDS": processed,
-		"VALID_RECORDS":     valid,
-		"INVALID_RECORDS":   invalid,
+		"status":            status,
+		"completed_at":      time.Now(),
+		"total_records":     processed,
+		"processed_records": processed,
+		"valid_records":     valid,
+		"invalid_records":   invalid,
 	})
 
 	removeJob(pipelineID)

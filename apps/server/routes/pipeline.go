@@ -3,9 +3,12 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/server/controllers"
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/server/middleware"
 )
 
-func SetupRoutes(router *gin.Engine) {
+func SetupRoutes(router *gin.Engine, apiKey string) {
+	router.Use(middleware.RequireAPIKey(apiKey))
+
 	router.Static("/exports", "exports")
 
 	v1 := router.Group("/api/v1")

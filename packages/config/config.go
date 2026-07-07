@@ -11,6 +11,7 @@ import (
 // Config holds every value the app needs from the environment.
 type Config struct {
 	ServerAddr string
+	APIKey     string
 
 	DBHost     string
 	DBUser     string
@@ -27,8 +28,14 @@ func Load() Config {
 		log.Println("No .env file found, relying on process environment variables")
 	}
 
+	apiKey := getEnv("API_KEY", "")
+	if apiKey == "" {
+		log.Fatal("API_KEY is required but not set")
+	}
+
 	return Config{
 		ServerAddr: getEnv("SERVER_ADDR", "localhost:9090"),
+		APIKey:     apiKey,
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBUser:     getEnv("DB_USER", "admin"),

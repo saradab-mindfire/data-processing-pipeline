@@ -5,11 +5,8 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 )
 
-// SaveError records one problem as a PipelineError row, which is what
-// GET /:id/errors reads back. Called directly wherever something goes wrong
-// above - no separate "error collector" goroutine needed.
 func SaveError(pipelineID, message string) {
-	if database.Instance == nil { // no DB connected (e.g. running tests) - skip
+	if database.Instance == nil {
 		return
 	}
 	database.Instance.Create(&models.PipelineError{

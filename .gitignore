@@ -1,4 +1,5 @@
 exports/*
+uploads/*
 main.exe
 curl-requests.sh
 sample.csv
