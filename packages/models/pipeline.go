@@ -22,12 +22,12 @@ type Pipeline struct {
 	NAME						string	 		`json:"name"`
 	STATUS						PipelineStatus	`json:"status"`
 	DESCRIPTION					string	 		`json:"description"`
-	TOTAL_RECORDS				int    	 	`json:"total_records"`
-	PROCESSED_RECORDS			int    	 	`json:"processed_records"`
-	VALID_RECORDS				int    	 	`json:"valid_records"`
-	INVALID_RECORDS				int    	 	`json:"invalid_records"`
-	STARTED_AT					time.Time	`json:"started_at"`
-	COMPLETED_AT				time.Time	`json:"completed_at"`
+	TOTAL_RECORDS				int    	 		`json:"total_records"`
+	PROCESSED_RECORDS			int    	 		`json:"processed_records"`
+	VALID_RECORDS				int    	 		`json:"valid_records"`
+	INVALID_RECORDS				int    	 		`json:"invalid_records"`
+	STARTED_AT					time.Time		`json:"started_at"`
+	COMPLETED_AT				time.Time		`json:"completed_at"`
 }
 
 func (p *Pipeline) BeforeCreate(tx *gorm.DB) error {

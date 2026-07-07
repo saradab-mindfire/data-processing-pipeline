@@ -24,7 +24,6 @@ func run(j *job, pipelineID string, req PipelineRequest) {
 		case "csv":
 			go dataio.ReadCSV(j.ctx, &readWg, pipelineID, source.Path, recordsCh)
 		case "json":
-			fmt.Println("Coming Here")
 			go dataio.ReadJSON(j.ctx, &readWg, pipelineID, source.Path, source.RecordsPath, recordsCh)
 		default:
 			readWg.Done()

@@ -57,8 +57,6 @@ func ReadJSON(ctx context.Context, wg *sync.WaitGroup, pipelineID, path, records
 			record.Fields[key] = jsonValueToString(value)
 		}
 
-		fmt.Println(record)
-
 		select {
 		case <-ctx.Done(): // pipeline was cancelled, stop reading immediately
 			return

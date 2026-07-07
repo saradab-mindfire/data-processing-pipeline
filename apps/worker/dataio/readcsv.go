@@ -46,7 +46,5 @@ func ReadCSV(ctx context.Context, wg *sync.WaitGroup, pipelineID, path string, o
 			return
 		case out <- shared.Record{ID: uuid.NewString(), Fields: fields}:
 		}
-
-		fmt.Println(row, "XCY")
 	}
 }
