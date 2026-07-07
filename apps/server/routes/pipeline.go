@@ -10,6 +10,7 @@ const apiV1Prefix = "/api/v1"
 
 func SetupRoutes(router *gin.Engine, apiKey string) {
 	router.Use(middleware.RequireAPIKey(apiKey))
+	router.Use(middleware.RateLimit())
 
 	router.Static("/exports", "exports")
 
