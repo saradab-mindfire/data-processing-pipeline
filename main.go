@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Code is a portal.")
+	fmt.Println("Server is running.")
 
 	connectionString := "host=localhost user=admin password=admin123 dbname=data-processing-pipeline port=5432 sslmode=disable"
 

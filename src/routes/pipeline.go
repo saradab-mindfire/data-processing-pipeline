@@ -6,6 +6,8 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine) {
+	router.Static("/exports", "exports")
+
 	v1 := router.Group("/api/v1")
 	pipelines := v1.Group("/pipelines")
 	{
