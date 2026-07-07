@@ -1,13 +1,15 @@
-package pipelines
+package stage
 
 import (
 	"context"
 	"strings"
 	"sync"
+
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/shared"
 )
 
-func transform(ctx context.Context, wg *sync.WaitGroup, in <-chan Record, out chan<- Record) {
-	defer wg.Done() 
+func Transform(ctx context.Context, wg *sync.WaitGroup, in <-chan shared.Record, out chan<- shared.Record) {
+	defer wg.Done()
 
 	for {
 		select {

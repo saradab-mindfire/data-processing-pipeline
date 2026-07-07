@@ -6,13 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/database"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/models"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/pipelines"
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 )
 
 func CreatePipeline(c *gin.Context) {
-	var req pipelines.PipelineRequest
+	var req worker.PipelineRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -30,7 +30,7 @@ func CreatePipeline(c *gin.Context) {
 		return
 	}
 
-	pipelines.Start(dbPipeline.ID, req)
+	worker.Start(dbPipeline.ID, req)
 
 	c.JSON(http.StatusAccepted, dbPipeline)
 }
@@ -88,7 +88,7 @@ func GetPipelineProgress(c *gin.Context) {
 	validRecords := dbPipeline.VALID_RECORDS
 	invalidRecords := dbPipeline.INVALID_RECORDS
 
-	if processed, valid, invalid, ok := pipelines.Progress(dbPipeline.ID); ok {
+	if processed, valid, invalid, ok := worker.Progress(dbPipeline.ID); ok {
 		processedRecords = processed
 		validRecords = valid
 		invalidRecords = invalid
@@ -170,7 +170,7 @@ func CancelPipeline(c *gin.Context) {
 		return
 	}
 
-	if pipelines.Cancel(dbPipeline.ID) {
+	if worker.Cancel(dbPipeline.ID) {
 		// Still running in memory: pipeline.run() will finish writing the
 		// final DB status itself.
 		c.JSON(http.StatusOK, dbPipeline)

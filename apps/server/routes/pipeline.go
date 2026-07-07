@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/controllers"
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/server/controllers"
 )
 
 func SetupRoutes(router *gin.Engine) {

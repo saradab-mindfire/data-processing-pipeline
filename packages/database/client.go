@@ -3,7 +3,7 @@ package database
 import (
 	"log"
 
-	"github.com/saradab-mindfire/data-processing-pipeline/src/models"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

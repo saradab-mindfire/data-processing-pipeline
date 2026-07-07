@@ -1,0 +1,12 @@
+.git
+.gitignore
+.air.toml
+tmp
+exports
+main.exe
+*.exe
+curl-requests.sh
+.env
+.env.example
+readme.md
+src/docs

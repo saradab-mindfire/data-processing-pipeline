@@ -1,14 +1,14 @@
-package pipelines
+package shared
 
 import (
-	"github.com/saradab-mindfire/data-processing-pipeline/src/database"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/models"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 )
 
-// saveError records one problem as a PipelineError row, which is what
+// SaveError records one problem as a PipelineError row, which is what
 // GET /:id/errors reads back. Called directly wherever something goes wrong
 // above - no separate "error collector" goroutine needed.
-func saveError(pipelineID, message string) {
+func SaveError(pipelineID, message string) {
 	if database.Instance == nil { // no DB connected (e.g. running tests) - skip
 		return
 	}

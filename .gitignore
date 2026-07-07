@@ -1,6 +1,5 @@
 exports/*
 main.exe
-go.sum
-go.mod
 curl-requests.sh
 sample.csv
+.env

@@ -4,21 +4,22 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/database"
-	"github.com/saradab-mindfire/data-processing-pipeline/src/routes"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/config"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/server/routes"
 )
 
 func main() {
 	fmt.Println("Server is running.")
 
-	connectionString := "host=localhost user=admin password=admin123 dbname=data-processing-pipeline port=5432 sslmode=disable"
+	cfg := config.Load()
 
-	database.Connect(connectionString)
+	database.Connect(cfg.DATABASEURL())
 	database.Migrate()
 
 	router := gin.Default()
 
 	routes.SetupRoutes(router)
 
-	router.Run("localhost:9090")
+	router.Run(cfg.ServerAddr)
 }

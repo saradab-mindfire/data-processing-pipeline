@@ -1,4 +1,4 @@
-package pipelines
+package worker
 
 func Progress(pipelineID string) (processed, valid, invalid int, ok bool) {
 	jobsMu.Lock()

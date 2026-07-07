@@ -15,13 +15,7 @@ A Go REST API for managing data processing pipelines, built with Gin and GORM.
    go mod download
    ```
 
-2. Create a PostgreSQL database and user matching the connection string in `main.go`:
-
-   ```
-   host=localhost user=admin password=admin123 dbname=data-processing-pipeline port=5432 sslmode=disable
-   ```
-
-   You can create the database and user with:
+2. Create a PostgreSQL database and user:
 
    ```sql
    CREATE USER admin WITH PASSWORD 'admin123';
@@ -29,6 +23,25 @@ A Go REST API for managing data processing pipelines, built with Gin and GORM.
    ```
 
    Tables are created automatically via GORM auto-migration on startup, so no manual migrations are needed.
+
+3. Copy `.env.example` to `.env` and adjust the values if your database or
+   server address differ from the defaults:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   | Variable      | Default                     | Description                        |
+   | ------------- | ---------------------------- | ---------------------------------- |
+   | `SERVER_ADDR` | `localhost:9090`             | Address the HTTP server listens on |
+   | `DB_HOST`     | `localhost`                  | Postgres host                      |
+   | `DB_USER`     | `admin`                      | Postgres user                      |
+   | `DB_PASSWORD` | `admin123`                   | Postgres password                  |
+   | `DB_NAME`     | `data-processing-pipeline`   | Postgres database name             |
+   | `DB_PORT`     | `5432`                       | Postgres port                      |
+   | `DB_SSLMODE`  | `disable`                    | Postgres `sslmode`                 |
+
+   `.env` is gitignored — never commit real credentials.
 
 ## Run
 
@@ -39,6 +52,78 @@ go run main.go
 ```
 
 The API will be available at `http://localhost:9090`.
+
+## Development
+
+This project includes an `.air.toml` config for [Air](https://github.com/air-verse/air),
+which watches `.go` files and automatically rebuilds and restarts the server
+on save (hot reload), instead of manually re-running `go run main.go`.
+
+1. Install Air (once):
+
+   ```bash
+   go install github.com/air-verse/air@latest
+   ```
+
+   Make sure your Go bin directory (`go env GOPATH`/bin) is on your `PATH` so
+   the `air` command is available.
+
+2. Start the dev server with hot reload:
+
+   ```bash
+   air
+   ```
+
+   Air uses the config in `.air.toml`: it builds to `./tmp/main` (`.exe` on
+   Windows), excludes `tmp/`, `vendor/`, `testdata/` and `exports/` from
+   watching, and gracefully restarts the server on each change.
+
+This step is optional — `go run main.go` still works for a one-off run.
+
+## Docker
+
+The project includes a `Dockerfile` and `docker-compose.yml` that build the
+API and run it alongside a Postgres container — no local Go or Postgres
+install required.
+
+1. Build and start both services:
+
+   ```bash
+   docker compose up --build
+   ```
+
+   This starts:
+   - `db`: `postgres:16-alpine`, seeded with the same credentials as
+     `.env.example` (`admin` / `admin123` / `data-processing-pipeline`)
+   - `app`: the API, built from the `Dockerfile`, listening on
+     `http://localhost:9090`
+
+   Database tables are created automatically via GORM auto-migration on
+   startup, same as running locally.
+
+2. Generated exports are written to `./exports` on the host (mounted into the
+   container at `/app/exports`), so pipeline results persist across
+   `docker compose up`/`down` cycles. Postgres data persists in the
+   `db_data` named volume.
+
+3. To run only the API image against a database you manage yourself, build
+   and run it directly, overriding env vars as needed:
+
+   ```bash
+   docker build -t data-processing-pipeline .
+   docker run --rm -p 9090:9090 \
+     -e SERVER_ADDR=0.0.0.0:9090 \
+     -e DB_HOST=host.docker.internal \
+     -e DB_USER=admin \
+     -e DB_PASSWORD=admin123 \
+     -e DB_NAME=data-processing-pipeline \
+     -e DB_PORT=5432 \
+     -e DB_SSLMODE=disable \
+     data-processing-pipeline
+   ```
+
+   Note `SERVER_ADDR` must bind to `0.0.0.0`, not `localhost`, for the
+   container's published port to be reachable from the host.
 
 ## API Endpoints
 
@@ -75,7 +160,7 @@ block for completion):
 ```
 
 The number of validation/transform workers is fixed in code
-(`src/pipelines/types.go`), not configurable per request.
+(`apps/worker/types.go`), not configurable per request.
 
 `sources[].type` supports `"csv"` and `"json"`; other types are reported as a
 pipeline error and skipped. `path` can be a local file path or an `http(s)://`
@@ -94,6 +179,6 @@ results are available via the existing `GET /:id/progress`, `GET /:id/results`
 and `GET /:id/errors` endpoints, and the final count is also written to
 `exports/<pipeline-id>.json`.
 
-The concurrent engine lives in `src/pipelines/` (see
+The concurrent engine lives in `apps/worker/` (see
 [`src/docs/pipeline-flow.md`](src/docs/pipeline-flow.md) for a walkthrough of
 the read -> validate -> transform -> count flow).

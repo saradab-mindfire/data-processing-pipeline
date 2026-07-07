@@ -1,4 +1,4 @@
-package pipelines
+package worker
 
 type SourceConfig struct {
 	Type string `json:"type"` // "csv" or "json"
@@ -15,9 +15,4 @@ const (
 type PipelineRequest struct {
 	Sources    []SourceConfig `json:"sources"`
 	ExportType string         `json:"export_type"`
-}
-
-type Record struct {
-	ID     string
-	Fields map[string]string
 }
