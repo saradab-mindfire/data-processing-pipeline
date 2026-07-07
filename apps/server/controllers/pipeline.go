@@ -45,9 +45,23 @@ func GetPipelines(c *gin.Context) {
 	c.JSON(http.StatusOK, pipelines)
 }
 
+func parsePipelineID(c *gin.Context) (string, bool) {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid pipeline id"})
+		return "", false
+	}
+	return id, true
+}
+
 func GetPipeline(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var pipeline models.Pipeline
-	if err := database.Instance.First(&pipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&pipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
@@ -56,8 +70,13 @@ func GetPipeline(c *gin.Context) {
 }
 
 func UpdatePipeline(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var pipeline models.Pipeline
-	if err := database.Instance.First(&pipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&pipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
@@ -78,8 +97,13 @@ func UpdatePipeline(c *gin.Context) {
 }
 
 func GetPipelineProgress(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var dbPipeline models.Pipeline
-	if err := database.Instance.First(&dbPipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&dbPipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
@@ -113,8 +137,13 @@ func GetPipelineProgress(c *gin.Context) {
 }
 
 func GetPipelineResults(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var pipeline models.Pipeline
-	if err := database.Instance.First(&pipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&pipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
@@ -143,8 +172,13 @@ func GetPipelineResults(c *gin.Context) {
 }
 
 func GetPipelineErrors(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var pipeline models.Pipeline
-	if err := database.Instance.First(&pipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&pipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
@@ -159,8 +193,13 @@ func GetPipelineErrors(c *gin.Context) {
 }
 
 func CancelPipeline(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var dbPipeline models.Pipeline
-	if err := database.Instance.First(&dbPipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&dbPipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
@@ -171,14 +210,10 @@ func CancelPipeline(c *gin.Context) {
 	}
 
 	if worker.Cancel(dbPipeline.ID) {
-		// Still running in memory: pipeline.run() will finish writing the
-		// final DB status itself.
 		c.JSON(http.StatusOK, dbPipeline)
 		return
 	}
 
-	// No matching in-memory job (e.g. the server restarted since this
-	// pipeline started) - fall back to marking it cancelled directly.
 	dbPipeline.Status = models.StatusCancelled
 	dbPipeline.CompletedAt = time.Now()
 	if err := database.Instance.Save(&dbPipeline).Error; err != nil {
@@ -190,8 +225,13 @@ func CancelPipeline(c *gin.Context) {
 }
 
 func DeletePipeline(c *gin.Context) {
+	id, ok := parsePipelineID(c)
+	if !ok {
+		return
+	}
+
 	var pipeline models.Pipeline
-	if err := database.Instance.First(&pipeline, "id = ?", c.Param("id")).Error; err != nil {
+	if err := database.Instance.First(&pipeline, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pipeline not found"})
 		return
 	}
