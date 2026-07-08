@@ -14,3 +14,14 @@ func SaveError(pipelineID, message string) {
 		Message:    message,
 	})
 }
+
+func SaveErrors(pipelineID string, messages []string) {
+	if database.Instance == nil || len(messages) == 0 {
+		return
+	}
+	errs := make([]models.PipelineError, len(messages))
+	for i, message := range messages {
+		errs[i] = models.PipelineError{PipelineID: pipelineID, Message: message}
+	}
+	database.Instance.Create(&errs)
+}

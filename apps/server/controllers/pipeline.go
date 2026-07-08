@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,26 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/workerclient"
 )
+
+const (
+	defaultPageLimit = 100
+	maxPageLimit     = 500
+)
+
+func pageParams(c *gin.Context) (limit, offset int) {
+	limit = defaultPageLimit
+	if v, err := strconv.Atoi(c.Query("limit")); err == nil && v > 0 {
+		limit = v
+	}
+	if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
+
+	if v, err := strconv.Atoi(c.Query("offset")); err == nil && v >= 0 {
+		offset = v
+	}
+	return limit, offset
+}
 
 // CreatePipeline creates a new pipeline and enqueues it for processing by a worker.
 func CreatePipeline(c *gin.Context) {
@@ -41,8 +62,10 @@ func CreatePipeline(c *gin.Context) {
 
 // GetPipelines returns all pipelines.
 func GetPipelines(c *gin.Context) {
+	limit, offset := pageParams(c)
+
 	var pipelines []models.Pipeline
-	if err := database.Instance.Find(&pipelines).Error; err != nil {
+	if err := database.Instance.Order("started_at desc").Limit(limit).Offset(offset).Find(&pipelines).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -189,8 +212,10 @@ func GetPipelineErrors(c *gin.Context) {
 		return
 	}
 
+	limit, offset := pageParams(c)
+
 	var errors []models.PipelineError
-	if err := database.Instance.Where("pipeline_id = ?", pipeline.ID).Find(&errors).Error; err != nil {
+	if err := database.Instance.Where("pipeline_id = ?", pipeline.ID).Order("created_at desc").Limit(limit).Offset(offset).Find(&errors).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

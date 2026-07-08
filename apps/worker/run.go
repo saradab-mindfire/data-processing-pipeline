@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -12,8 +13,42 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/queue"
 )
 
+const progressFlushInterval = 500 * time.Millisecond
+
 func run(j *job, pipelineID string, req models.PipelineRequest) {
-	database.Instance.Model(&models.Pipeline{}).Where("id = ?", pipelineID).Update("status", models.StatusProcessing)
+	claim := database.Instance.Model(&models.Pipeline{}).
+		Where("id = ? AND status = ?", pipelineID, models.StatusPending).
+		Update("status", models.StatusProcessing)
+	if claim.Error != nil {
+		shared.SaveError(pipelineID, "could not claim pipeline: "+claim.Error.Error())
+		removeJob(pipelineID)
+		return
+	}
+	if claim.RowsAffected == 0 {
+		removeJob(pipelineID)
+		return
+	}
+
+	flushCtx, stopFlush := context.WithCancel(context.Background())
+	flushDone := make(chan struct{})
+	go func() {
+		defer close(flushDone)
+		ticker := time.NewTicker(progressFlushInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				processed, valid, invalid := j.counts()
+				database.Instance.Model(&models.Pipeline{}).Where("id = ?", pipelineID).Updates(map[string]any{
+					"processed_records": processed,
+					"valid_records":     valid,
+					"invalid_records":   invalid,
+				})
+			case <-flushCtx.Done():
+				return
+			}
+		}
+	}()
 
 	recordsCh := make(chan shared.Record, 100)
 	validatedCh := make(chan shared.Record, 100)
@@ -62,11 +97,14 @@ func run(j *job, pipelineID string, req models.PipelineRequest) {
 		records = append(records, record)
 	}
 
-	dataio.ExportResult(pipelineID, records)
+	stopFlush()
+	<-flushDone
 
 	status := models.StatusCompleted
 	if j.ctx.Err() != nil {
 		status = models.StatusCancelled
+	} else {
+		dataio.ExportResult(pipelineID, records)
 	}
 
 	processed, valid, invalid := j.counts()
