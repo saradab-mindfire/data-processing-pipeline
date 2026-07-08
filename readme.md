@@ -137,6 +137,28 @@ Postgres container — no local Go or Postgres install required.
    Note `SERVER_ADDR` must bind to `0.0.0.0`, not `localhost`, for the
    container's published port to be reachable from the host.
 
+4. Redeploying after a code change: containers already running via
+   `docker compose up -d` keep using the image they were created from — a
+   plain `docker compose restart` does **not** recompile the Go binary. Rebuild
+   the image first, then recreate the container:
+
+   ```bash
+   docker compose build app
+   docker compose up -d app
+   ```
+
+   (Swap `app` for `worker` if the change is in `apps/worker/`.) Compose
+   detects the new image tag and recreates only that service, leaving `db`
+   untouched.
+
+## API Documentation
+
+A Swagger UI is served directly by the running API at `/docs` (no `/api/v1`
+prefix, no API key required), rendered from `docs/swagger-ui.html`.
+
+Once the server is running, open `http://localhost:9090/docs` in a browser
+to explore and try the API interactively.
+
 ## API Endpoints
 
 Base path: `/api/v1/pipelines`

@@ -8,8 +8,20 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/shared"
 )
 
+const errorBatchSize = 50
+
 func Validate(ctx context.Context, wg *sync.WaitGroup, pipelineID string, addValid, addInvalid func(), in <-chan shared.Record, out chan<- shared.Record) {
-	defer wg.Done() 
+	defer wg.Done()
+
+	errBatch := make([]string, 0, errorBatchSize)
+	flushErrors := func() {
+		if len(errBatch) == 0 {
+			return
+		}
+		shared.SaveErrors(pipelineID, errBatch)
+		errBatch = errBatch[:0]
+	}
+	defer flushErrors()
 
 	for {
 		select {
@@ -22,7 +34,10 @@ func Validate(ctx context.Context, wg *sync.WaitGroup, pipelineID string, addVal
 
 			if !hasNonEmptyField(record) {
 				addInvalid()
-				shared.SaveError(pipelineID, "record "+record.ID+": all fields are empty")
+				errBatch = append(errBatch, "record "+record.ID+": all fields are empty")
+				if len(errBatch) >= errorBatchSize {
+					flushErrors()
+				}
 				continue
 			}
 			addValid()

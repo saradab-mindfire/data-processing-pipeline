@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,27 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/workerclient"
 )
 
+const (
+	defaultPageLimit = 100
+	maxPageLimit     = 500
+)
+
+func pageParams(c *gin.Context) (limit, offset int) {
+	limit = defaultPageLimit
+	if v, err := strconv.Atoi(c.Query("limit")); err == nil && v > 0 {
+		limit = v
+	}
+	if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
+
+	if v, err := strconv.Atoi(c.Query("offset")); err == nil && v >= 0 {
+		offset = v
+	}
+	return limit, offset
+}
+
+// CreatePipeline creates a new pipeline and enqueues it for processing by a worker.
 func CreatePipeline(c *gin.Context) {
 	var req models.PipelineRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -38,9 +60,12 @@ func CreatePipeline(c *gin.Context) {
 	c.JSON(http.StatusAccepted, dbPipeline)
 }
 
+// GetPipelines returns all pipelines.
 func GetPipelines(c *gin.Context) {
+	limit, offset := pageParams(c)
+
 	var pipelines []models.Pipeline
-	if err := database.Instance.Find(&pipelines).Error; err != nil {
+	if err := database.Instance.Order("started_at desc").Limit(limit).Offset(offset).Find(&pipelines).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -57,6 +82,7 @@ func parsePipelineID(c *gin.Context) (string, bool) {
 	return id, true
 }
 
+// GetPipeline returns a single pipeline by id.
 func GetPipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -72,6 +98,7 @@ func GetPipeline(c *gin.Context) {
 	c.JSON(http.StatusOK, pipeline)
 }
 
+// UpdatePipeline updates fields of an existing pipeline.
 func UpdatePipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -99,6 +126,7 @@ func UpdatePipeline(c *gin.Context) {
 	c.JSON(http.StatusOK, pipeline)
 }
 
+// GetPipelineProgress returns live processing progress for a pipeline.
 func GetPipelineProgress(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -139,6 +167,7 @@ func GetPipelineProgress(c *gin.Context) {
 	})
 }
 
+// GetPipelineResults returns the results summary and export URL for a completed pipeline.
 func GetPipelineResults(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -170,6 +199,7 @@ func GetPipelineResults(c *gin.Context) {
 	})
 }
 
+// GetPipelineErrors returns the list of record-level errors recorded for a pipeline.
 func GetPipelineErrors(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -182,8 +212,10 @@ func GetPipelineErrors(c *gin.Context) {
 		return
 	}
 
+	limit, offset := pageParams(c)
+
 	var errors []models.PipelineError
-	if err := database.Instance.Where("pipeline_id = ?", pipeline.ID).Find(&errors).Error; err != nil {
+	if err := database.Instance.Where("pipeline_id = ?", pipeline.ID).Order("created_at desc").Limit(limit).Offset(offset).Find(&errors).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -191,6 +223,7 @@ func GetPipelineErrors(c *gin.Context) {
 	c.JSON(http.StatusOK, errors)
 }
 
+// CancelPipeline cancels a pending or processing pipeline.
 func CancelPipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -227,6 +260,7 @@ func CancelPipeline(c *gin.Context) {
 	c.JSON(http.StatusOK, dbPipeline)
 }
 
+// DeletePipeline deletes a pipeline by id.
 func DeletePipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {

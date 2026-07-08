@@ -21,11 +21,13 @@ func ReadCSV(ctx context.Context, wg *sync.WaitGroup, pipelineID, path string, o
 	defer file.Close()
 
 	reader := csv.NewReader(file)
-	headers, err := reader.Read()
+	reader.ReuseRecord = true
+	headerRow, err := reader.Read()
 	if err != nil {
 		shared.SaveError(pipelineID, "could not read header row in "+path+": "+err.Error())
 		return
 	}
+	headers := append([]string(nil), headerRow...)
 
 	for {
 		row, err := reader.Read()
