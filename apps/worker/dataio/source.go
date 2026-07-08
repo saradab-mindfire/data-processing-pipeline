@@ -3,7 +3,6 @@ package dataio
 import (
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,6 +48,9 @@ func openRemoteSource(rawURL string) (io.ReadCloser, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("unsupported URL scheme: %q", u.Scheme)
 	}
 
 	resp, err := httpSourceClient.Get(rawURL)

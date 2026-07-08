@@ -1,10 +1,14 @@
 package worker
 
-import "context"
+import (
+	"context"
 
-func Start(pipelineID string, req PipelineRequest) {
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
+)
+
+func Start(pipelineID string, req models.PipelineRequest) {
 	ctx, cancel := context.WithCancel(context.Background())
-	j := &job{ctx: ctx, cancel: cancel}
+	j := &job{pipelineID: pipelineID, ctx: ctx, cancel: cancel}
 
 	jobsMu.Lock()
 	jobs[pipelineID] = j

@@ -3,4 +3,5 @@ uploads/*
 main.exe
 curl-requests.sh
 sample.csv
-.env
+/**/.env
+exports/
