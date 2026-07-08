@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: data-processing-pipeline
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432"
+      - "${DB_PORT}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d data-processing-pipeline"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,15 +26,12 @@ services:
         condition: service_healthy
       worker:
         condition: service_started
+    env_file:
+      - .env
     environment:
-      SERVER_ADDR: 0.0.0.0:9090
-      DB_HOST: db
-      DB_USER: admin
-      DB_PASSWORD: admin123
-      DB_NAME: data-processing-pipeline
-      DB_PORT: 5432
-      DB_SSLMODE: disable
-      WORKER_URL: http://worker:9091
+      SERVER_ADDR: ${DOCKER_SERVER_ADDR:-0.0.0.0:9090}
+      DB_HOST: ${DOCKER_DB_HOST:-db}
+      WORKER_URL: ${DOCKER_WORKER_URL:-http://worker:9091}
     ports:
       - "9090:9090"
     volumes:
@@ -48,14 +45,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      DB_HOST: db
-      DB_USER: admin
-      DB_PASSWORD: admin123
-      DB_NAME: data-processing-pipeline
-      DB_PORT: 5432
-      DB_SSLMODE: disable
-      WORKER_ADDR: 0.0.0.0:9091
+      DB_HOST: ${DOCKER_DB_HOST:-db}
+      WORKER_ADDR: ${DOCKER_WORKER_ADDR:-0.0.0.0:9091}
     ports:
       - "9091:9091"
     volumes:
