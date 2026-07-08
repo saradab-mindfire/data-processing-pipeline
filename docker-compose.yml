@@ -32,6 +32,7 @@ services:
       SERVER_ADDR: ${DOCKER_SERVER_ADDR:-0.0.0.0:9090}
       DB_HOST: ${DOCKER_DB_HOST:-db}
       WORKER_URL: ${DOCKER_WORKER_URL:-http://worker:9091}
+      EXPORT_BASE_URL: ${EXPORT_BASE_URL:-http://localhost:9091}
     ports:
       - "9090:9090"
     volumes:

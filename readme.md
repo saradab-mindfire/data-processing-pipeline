@@ -18,8 +18,8 @@ A Go REST API for managing data processing pipelines, built with Gin and GORM.
 2. Create a PostgreSQL database and user:
 
    ```sql
-   CREATE USER admin WITH PASSWORD 'admin123';
-   CREATE DATABASE "data-processing-pipeline" OWNER admin;
+   CREATE USER admin WITH PASSWORD 'admin123',
+   CREATE DATABASE "data-processing-pipeline" OWNER admin,
    ```
 
    Tables are created automatically via GORM auto-migration on startup, so no manual migrations are needed.
@@ -31,17 +31,18 @@ A Go REST API for managing data processing pipelines, built with Gin and GORM.
    cp .env.example .env
    ```
 
-   | Variable      | Default                     | Description                        |
-   | ------------- | ---------------------------- | ---------------------------------- |
-   | `SERVER_ADDR` | `localhost:9090`             | Address the HTTP server listens on |
-   | `DB_HOST`     | `localhost`                  | Postgres host                      |
-   | `DB_USER`     | `admin`                      | Postgres user                      |
-   | `DB_PASSWORD` | `admin123`                   | Postgres password                  |
-   | `DB_NAME`     | `data-processing-pipeline`   | Postgres database name             |
-   | `DB_PORT`     | `5432`                       | Postgres port                      |
-   | `DB_SSLMODE`  | `disable`                    | Postgres `sslmode`                 |
-   | `WORKER_ADDR` | `localhost:9091`             | Address the worker's internal API listens on |
-   | `WORKER_URL`  | `http://localhost:9091`      | URL the server uses to reach the worker's internal API |
+   | Variable          | Default                    | Description                                                                                                                                                                                     |
+   | ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `SERVER_ADDR`     | `localhost:9090`           | Address the HTTP server listens on                                                                                                                                                              |
+   | `DB_HOST`         | `localhost`                | Postgres host                                                                                                                                                                                   |
+   | `DB_USER`         | `admin`                    | Postgres user                                                                                                                                                                                   |
+   | `DB_PASSWORD`     | `admin123`                 | Postgres password                                                                                                                                                                               |
+   | `DB_NAME`         | `data-processing-pipeline` | Postgres database name                                                                                                                                                                          |
+   | `DB_PORT`         | `5432`                     | Postgres port                                                                                                                                                                                   |
+   | `DB_SSLMODE`      | `disable`                  | Postgres `sslmode`                                                                                                                                                                              |
+   | `WORKER_ADDR`     | `localhost:9091`           | Address the worker's internal API listens on                                                                                                                                                    |
+   | `WORKER_URL`      | `http://localhost:9091`    | URL the server uses to reach the worker's internal API                                                                                                                                          |
+   | `EXPORT_BASE_URL` | `http://localhost:9091`    | Public URL used to build `export_url` links returned to API clients, must be reachable from wherever clients call the API (unlike `WORKER_URL`, which may point at an internal Docker hostname) |
 
    `.env` is gitignored — never commit real credentials.
 
@@ -163,17 +164,17 @@ to explore and try the API interactively.
 
 Base path: `/api/v1/pipelines`
 
-| Method | Path            | Description                             |
-| ------ | --------------- | ---------------------------------------- |
-| POST   | `/`             | Start a pipeline run (see below)        |
-| GET    | `/`             | List pipelines                          |
-| GET    | `/:id`          | Get a pipeline                          |
-| GET    | `/:id/progress` | Get pipeline progress                   |
-| GET    | `/:id/results`  | Get pipeline results                    |
-| GET    | `/:id/errors`   | Get pipeline errors                     |
-| PATCH  | `/:id/cancel`   | Cancel a running pipeline               |
-| PUT    | `/:id`          | Update a pipeline                       |
-| DELETE | `/:id`          | Delete a pipeline                       |
+| Method | Path            | Description                      |
+| ------ | --------------- | -------------------------------- |
+| POST   | `/`             | Start a pipeline run (see below) |
+| GET    | `/`             | List pipelines                   |
+| GET    | `/:id`          | Get a pipeline                   |
+| GET    | `/:id/progress` | Get pipeline progress            |
+| GET    | `/:id/results`  | Get pipeline results             |
+| GET    | `/:id/errors`   | Get pipeline errors              |
+| PATCH  | `/:id/cancel`   | Cancel a running pipeline        |
+| PUT    | `/:id`          | Update a pipeline                |
+| DELETE | `/:id`          | Delete a pipeline                |
 
 ### Starting a pipeline run
 
@@ -185,9 +186,16 @@ block for completion):
 {
   "sources": [
     { "type": "csv", "path": "./sample.csv" },
-    { "type": "csv", "path": "https://covid.ourworldindata.org/data/owid-covid-data.csv" },
+    {
+      "type": "csv",
+      "path": "https://covid.ourworldindata.org/data/owid-covid-data.csv"
+    },
     { "type": "json", "path": "https://jsonplaceholder.typicode.com/posts" },
-    { "type": "json", "path": "https://randomuser.me/api/?results=10", "records_path": "results" }
+    {
+      "type": "json",
+      "path": "https://randomuser.me/api/?results=10",
+      "records_path": "results"
+    }
   ],
   "export_type": "json"
 }
@@ -196,7 +204,7 @@ block for completion):
 The number of validation/transform workers is fixed in code
 (`apps/worker/types.go`), not configurable per request.
 
-`sources[].type` supports `"csv"` and `"json"`; other types are reported as a
+`sources[].type` supports `"csv"` and `"json"`, other types are reported as a
 pipeline error and skipped. `path` can be a local file path or an `http(s)://`
 URL for either type. For a `"json"` source:
 

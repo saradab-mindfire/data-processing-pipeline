@@ -18,6 +18,7 @@ func main() {
 	database.Connect(cfg.DATABASEURL())
 	database.Migrate()
 	workerclient.Init(cfg.WorkerURL)
+	workerclient.InitExportBaseURL(cfg.ExportBaseURL)
 
 	router := gin.Default()
 
