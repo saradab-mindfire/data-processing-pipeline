@@ -6,13 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/workerclient"
 )
 
 func CreatePipeline(c *gin.Context) {
-	var req worker.PipelineRequest
+	var req models.PipelineRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -21,7 +21,7 @@ func CreatePipeline(c *gin.Context) {
 	dbPipeline := models.Pipeline{
 		ID:        uuid.NewString(),
 		Name:      "pipeline-" + time.Now().Format("20060102-150405"),
-		Status:    models.StatusProcessing,
+		Status:    models.StatusPending,
 		StartedAt: time.Now(),
 	}
 
@@ -30,7 +30,10 @@ func CreatePipeline(c *gin.Context) {
 		return
 	}
 
-	worker.Start(dbPipeline.ID, req)
+	if err := workerclient.Enqueue(c.Request.Context(), dbPipeline.ID, req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusAccepted, dbPipeline)
 }
@@ -112,7 +115,7 @@ func GetPipelineProgress(c *gin.Context) {
 	validRecords := dbPipeline.ValidRecords
 	invalidRecords := dbPipeline.InvalidRecords
 
-	if processed, valid, invalid, ok := worker.Progress(dbPipeline.ID); ok {
+	if processed, valid, invalid, ok := workerclient.GetProgress(dbPipeline.ID); ok {
 		processedRecords = processed
 		validRecords = valid
 		invalidRecords = invalid
@@ -153,11 +156,7 @@ func GetPipelineResults(c *gin.Context) {
 		return
 	}
 
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	}
-	exportURL := scheme + "://" + c.Request.Host + "/exports/" + pipeline.ID + ".json"
+	exportURL := workerclient.BaseURL() + "/exports/" + pipeline.ID + ".json"
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":                pipeline.ID,
@@ -209,7 +208,11 @@ func CancelPipeline(c *gin.Context) {
 		return
 	}
 
-	if worker.Cancel(dbPipeline.ID) {
+	workerclient.Cancel(dbPipeline.ID)
+
+	if dbPipeline.Status == models.StatusProcessing {
+		// A worker has already picked this job up; it will observe the
+		// cancel notification and move the pipeline to cancelled itself.
 		c.JSON(http.StatusOK, dbPipeline)
 		return
 	}

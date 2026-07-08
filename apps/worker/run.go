@@ -4,14 +4,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
-	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/dataio"
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/shared"
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/stage"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
+	"github.com/saradab-mindfire/data-processing-pipeline/packages/queue"
 )
 
-func run(j *job, pipelineID string, req PipelineRequest) {
+func run(j *job, pipelineID string, req models.PipelineRequest) {
+	database.Instance.Model(&models.Pipeline{}).Where("id = ?", pipelineID).Update("status", models.StatusProcessing)
+
 	recordsCh := make(chan shared.Record, 100)
 	validatedCh := make(chan shared.Record, 100)
 	transformedCh := make(chan shared.Record, 100)
@@ -76,5 +79,6 @@ func run(j *job, pipelineID string, req PipelineRequest) {
 		"invalid_records":   invalid,
 	})
 
+	queue.DeleteProgress(pipelineID)
 	removeJob(pipelineID)
 }

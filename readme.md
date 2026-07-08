@@ -40,6 +40,8 @@ A Go REST API for managing data processing pipelines, built with Gin and GORM.
    | `DB_NAME`     | `data-processing-pipeline`   | Postgres database name             |
    | `DB_PORT`     | `5432`                       | Postgres port                      |
    | `DB_SSLMODE`  | `disable`                    | Postgres `sslmode`                 |
+   | `WORKER_ADDR` | `localhost:9091`             | Address the worker's internal API listens on |
+   | `WORKER_URL`  | `http://localhost:9091`      | URL the server uses to reach the worker's internal API |
 
    `.env` is gitignored — never commit real credentials.
 
@@ -48,16 +50,22 @@ A Go REST API for managing data processing pipelines, built with Gin and GORM.
 Start the server:
 
 ```bash
-go run main.go
+go run ./apps/server/cmd
 ```
 
 The API will be available at `http://localhost:9090`.
+
+Start the worker (in a separate terminal):
+
+```bash
+go run ./apps/worker/cmd
+```
 
 ## Development
 
 This project includes an `.air.toml` config for [Air](https://github.com/air-verse/air),
 which watches `.go` files and automatically rebuilds and restarts the server
-on save (hot reload), instead of manually re-running `go run main.go`.
+on save (hot reload), instead of manually re-running `go run ./apps/server/cmd`.
 
 1. Install Air (once):
 
@@ -78,15 +86,15 @@ on save (hot reload), instead of manually re-running `go run main.go`.
    Windows), excludes `tmp/`, `vendor/`, `testdata/` and `exports/` from
    watching, and gracefully restarts the server on each change.
 
-This step is optional — `go run main.go` still works for a one-off run.
+This step is optional — `go run ./apps/server/cmd` still works for a one-off run.
 
 ## Docker
 
-The project includes a `Dockerfile` and `docker-compose.yml` that build the
-API and run it alongside a Postgres container — no local Go or Postgres
-install required.
+The project includes `apps/server/Dockerfile`, `apps/worker/Dockerfile`, and a
+`docker-compose.yml` that build the API and worker and run them alongside a
+Postgres container — no local Go or Postgres install required.
 
-1. Build and start both services:
+1. Build and start all services:
 
    ```bash
    docker compose up --build
@@ -95,8 +103,12 @@ install required.
    This starts:
    - `db`: `postgres:16-alpine`, seeded with the same credentials as
      `.env.example` (`admin` / `admin123` / `data-processing-pipeline`)
-   - `app`: the API, built from the `Dockerfile`, listening on
+   - `app`: the API, built from `apps/server/Dockerfile`, listening on
      `http://localhost:9090`
+   - `worker`: the pipeline worker, built from `apps/worker/Dockerfile`,
+     exposing an internal API on `http://worker:9091` that `app` uses to
+     enqueue jobs and read live progress/cancel state (kept in the worker's
+     own memory — no external queue or cache)
 
    Database tables are created automatically via GORM auto-migration on
    startup, same as running locally.
@@ -110,7 +122,7 @@ install required.
    and run it directly, overriding env vars as needed:
 
    ```bash
-   docker build -t data-processing-pipeline .
+   docker build -t data-processing-pipeline -f apps/server/Dockerfile .
    docker run --rm -p 9090:9090 \
      -e SERVER_ADDR=0.0.0.0:9090 \
      -e DB_HOST=host.docker.internal \

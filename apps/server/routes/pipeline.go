@@ -9,12 +9,14 @@ import (
 const apiV1Prefix = "/api/v1"
 
 func SetupRoutes(router *gin.Engine, apiKey string) {
-	router.Use(middleware.RequireAPIKey(apiKey))
 	router.Use(middleware.RateLimit())
 
 	router.Static("/exports", "exports")
 
 	v1 := router.Group(apiV1Prefix)
+	
+	v1.Use(middleware.RequireAPIKey(apiKey))
+
 	pipelines := v1.Group("/pipelines")
 	{
 		pipelines.POST("", controllers.CreatePipeline)

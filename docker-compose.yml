@@ -17,11 +17,15 @@ services:
       retries: 5
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      worker:
+        condition: service_started
     environment:
       SERVER_ADDR: 0.0.0.0:9090
       DB_HOST: db
@@ -30,8 +34,30 @@ services:
       DB_NAME: data-processing-pipeline
       DB_PORT: 5432
       DB_SSLMODE: disable
+      WORKER_URL: http://worker:9091
     ports:
       - "9090:9090"
+    volumes:
+      - ./exports:/app/exports
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_USER: admin
+      DB_PASSWORD: admin123
+      DB_NAME: data-processing-pipeline
+      DB_PORT: 5432
+      DB_SSLMODE: disable
+      WORKER_ADDR: 0.0.0.0:9091
+    ports:
+      - "9091:9091"
     volumes:
       - ./exports:/app/exports
 

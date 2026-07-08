@@ -6,7 +6,7 @@ exports
 main.exe
 *.exe
 curl-requests.sh
-.env
-.env.example
+**/.env
+**/.env.example
 readme.md
 src/docs

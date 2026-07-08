@@ -19,6 +19,9 @@ type Config struct {
 	DBName     string
 	DBPort     string
 	DBSSLMode  string
+
+	WorkerAddr string
+	WorkerURL string
 }
 
 // Load reads a local .env file (if present) and then the process
@@ -27,15 +30,11 @@ func Load() Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on process environment variables")
 	}
-
-	apiKey := getEnv("API_KEY", "")
-	if apiKey == "" {
-		log.Fatal("API_KEY is required but not set")
-	}
+	fmt.Println("XYZ", getEnv("API_KEY", ""))
 
 	return Config{
 		ServerAddr: getEnv("SERVER_ADDR", "localhost:9090"),
-		APIKey:     apiKey,
+		APIKey:     getEnv("API_KEY", ""),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBUser:     getEnv("DB_USER", "admin"),
@@ -43,6 +42,9 @@ func Load() Config {
 		DBName:     getEnv("DB_NAME", "data-processing-pipeline"),
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+
+		WorkerAddr: getEnv("WORKER_ADDR", "localhost:9091"),
+		WorkerURL:  getEnv("WORKER_URL", "http://localhost:9091"),
 	}
 }
 
