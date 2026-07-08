@@ -11,6 +11,7 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/workerclient"
 )
 
+// CreatePipeline creates a new pipeline and enqueues it for processing by a worker.
 func CreatePipeline(c *gin.Context) {
 	var req models.PipelineRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -38,6 +39,7 @@ func CreatePipeline(c *gin.Context) {
 	c.JSON(http.StatusAccepted, dbPipeline)
 }
 
+// GetPipelines returns all pipelines.
 func GetPipelines(c *gin.Context) {
 	var pipelines []models.Pipeline
 	if err := database.Instance.Find(&pipelines).Error; err != nil {
@@ -57,6 +59,7 @@ func parsePipelineID(c *gin.Context) (string, bool) {
 	return id, true
 }
 
+// GetPipeline returns a single pipeline by id.
 func GetPipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -72,6 +75,7 @@ func GetPipeline(c *gin.Context) {
 	c.JSON(http.StatusOK, pipeline)
 }
 
+// UpdatePipeline updates fields of an existing pipeline.
 func UpdatePipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -99,6 +103,7 @@ func UpdatePipeline(c *gin.Context) {
 	c.JSON(http.StatusOK, pipeline)
 }
 
+// GetPipelineProgress returns live processing progress for a pipeline.
 func GetPipelineProgress(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -139,6 +144,7 @@ func GetPipelineProgress(c *gin.Context) {
 	})
 }
 
+// GetPipelineResults returns the results summary and export URL for a completed pipeline.
 func GetPipelineResults(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -170,6 +176,7 @@ func GetPipelineResults(c *gin.Context) {
 	})
 }
 
+// GetPipelineErrors returns the list of record-level errors recorded for a pipeline.
 func GetPipelineErrors(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -191,6 +198,7 @@ func GetPipelineErrors(c *gin.Context) {
 	c.JSON(http.StatusOK, errors)
 }
 
+// CancelPipeline cancels a pending or processing pipeline.
 func CancelPipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {
@@ -227,6 +235,7 @@ func CancelPipeline(c *gin.Context) {
 	c.JSON(http.StatusOK, dbPipeline)
 }
 
+// DeletePipeline deletes a pipeline by id.
 func DeletePipeline(c *gin.Context) {
 	id, ok := parsePipelineID(c)
 	if !ok {

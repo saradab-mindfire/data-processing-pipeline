@@ -1,0 +1,342 @@
+openapi: 3.0.3
+info:
+  title: Data Processing Pipeline API
+  description: API for creating and managing data-processing pipelines.
+  version: "1.0"
+servers:
+  - url: /api/v1
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /pipelines:
+    get:
+      summary: List pipelines
+      description: Returns all pipelines.
+      tags: [pipelines]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pipeline"
+        "500":
+          $ref: "#/components/responses/Error"
+    post:
+      summary: Create a pipeline
+      description: Creates a new pipeline and enqueues it for processing by a worker.
+      tags: [pipelines]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PipelineRequest"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pipeline"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /pipelines/{id}:
+    get:
+      summary: Get a pipeline
+      description: Returns a single pipeline by id.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pipeline"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+    put:
+      summary: Update a pipeline
+      description: Updates fields of an existing pipeline.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pipeline"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pipeline"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+    delete:
+      summary: Delete a pipeline
+      description: Deletes a pipeline by id.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /pipelines/{id}/progress:
+    get:
+      summary: Get pipeline progress
+      description: Returns live processing progress for a pipeline.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineProgress"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /pipelines/{id}/results:
+    get:
+      summary: Get pipeline results
+      description: Returns the results summary and export URL for a completed pipeline.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineResults"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: Pipeline has not completed yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /pipelines/{id}/errors:
+    get:
+      summary: Get pipeline errors
+      description: Returns the list of record-level errors recorded for a pipeline.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PipelineError"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /pipelines/{id}/cancel:
+    patch:
+      summary: Cancel a pipeline
+      description: Cancels a pending or processing pipeline.
+      tags: [pipelines]
+      parameters:
+        - $ref: "#/components/parameters/PipelineID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pipeline"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: Pipeline cannot be cancelled from its current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    PipelineID:
+      name: id
+      in: path
+      required: true
+      description: Pipeline ID
+      schema:
+        type: string
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    SourceConfig:
+      type: object
+      properties:
+        type:
+          type: string
+          description: '"csv" or "json"'
+        path:
+          type: string
+          description: local file path, or an http(s):// URL
+        records_path:
+          type: string
+
+    PipelineRequest:
+      type: object
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/SourceConfig"
+        export_type:
+          type: string
+
+    Pipeline:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+        description:
+          type: string
+        total_records:
+          type: integer
+        processed_records:
+          type: integer
+        valid_records:
+          type: integer
+        invalid_records:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    PipelineError:
+      type: object
+      properties:
+        id:
+          type: string
+        pipeline_id:
+          type: string
+        record_id:
+          type: string
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    PipelineProgress:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        total_records:
+          type: integer
+        processed_records:
+          type: integer
+        valid_records:
+          type: integer
+        invalid_records:
+          type: integer
+        percentage:
+          type: number
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    PipelineResults:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        total_records:
+          type: integer
+        processed_records:
+          type: integer
+        valid_records:
+          type: integer
+        invalid_records:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+        export_url:
+          type: string

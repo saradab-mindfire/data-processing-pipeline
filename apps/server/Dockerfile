@@ -18,6 +18,7 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 
 COPY --from=builder /app/bin/server ./server
+COPY --from=builder /app/apps/server/docs ./docs
 COPY sample.csv ./sample.csv
 
 RUN mkdir -p /app/exports
