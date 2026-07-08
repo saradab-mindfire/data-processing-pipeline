@@ -20,8 +20,9 @@ type Config struct {
 	DBPort     string
 	DBSSLMode  string
 
-	WorkerAddr string
-	WorkerURL string
+	WorkerAddr    string
+	WorkerURL     string
+	ExportBaseURL string
 }
 
 // Load reads a local .env file (if present) and then the process
@@ -43,8 +44,9 @@ func Load() Config {
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
-		WorkerAddr: getEnv("WORKER_ADDR", "localhost:9091"),
-		WorkerURL:  getEnv("WORKER_URL", "http://localhost:9091"),
+		WorkerAddr:    getEnv("WORKER_ADDR", "localhost:9091"),
+		WorkerURL:     getEnv("WORKER_URL", "http://localhost:9091"),
+		ExportBaseURL: getEnv("EXPORT_BASE_URL", getEnv("WORKER_URL", "http://localhost:9091")),
 	}
 }
 

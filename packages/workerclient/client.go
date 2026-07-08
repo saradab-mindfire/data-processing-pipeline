@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	baseURL    string
-	httpClient = &http.Client{Timeout: 10 * time.Second}
+	baseURL       string
+	exportBaseURL string
+	httpClient    = &http.Client{Timeout: 10 * time.Second}
 )
 
 // Init sets the base URL used to reach the worker's internal API.
@@ -21,9 +22,12 @@ func Init(url string) {
 	baseURL = url
 }
 
-// BaseURL returns the worker's base URL, e.g. for building export links.
-func BaseURL() string {
-	return baseURL
+func InitExportBaseURL(url string) {
+	exportBaseURL = url
+}
+
+func ExportBaseURL() string {
+	return exportBaseURL
 }
 
 // submits a pipeline job to the worker.

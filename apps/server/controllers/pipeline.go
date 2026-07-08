@@ -185,7 +185,7 @@ func GetPipelineResults(c *gin.Context) {
 		return
 	}
 
-	exportURL := workerclient.BaseURL() + "/exports/" + pipeline.ID + ".json"
+	exportURL := workerclient.ExportBaseURL() + "/exports/" + pipeline.ID + ".json"
 
 	c.JSON(http.StatusOK, gin.H{
 		"id":                pipeline.ID,

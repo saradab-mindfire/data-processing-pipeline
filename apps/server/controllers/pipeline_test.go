@@ -385,7 +385,7 @@ func TestGetPipelineResults(t *testing.T) {
 		}
 		var body map[string]any
 		json.Unmarshal(w.Body.Bytes(), &body)
-		wantURL := workerclient.BaseURL() + "/exports/" + pipeline.ID + ".json"
+		wantURL := workerclient.ExportBaseURL() + "/exports/" + pipeline.ID + ".json"
 		if body["export_url"] != wantURL {
 			t.Errorf("export_url = %v, want %q", body["export_url"], wantURL)
 		}
