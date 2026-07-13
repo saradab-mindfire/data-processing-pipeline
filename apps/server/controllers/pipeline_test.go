@@ -211,6 +211,63 @@ func TestGetPipelines(t *testing.T) {
 	}
 }
 
+func TestGetPipelinesPagination(t *testing.T) {
+	db := setupTestDB(t)
+	r := newTestRouter()
+
+	base := time.Now()
+	for i := range 3 {
+		db.Create(&models.Pipeline{
+			ID:        fmt.Sprintf("1111111%d-1111-1111-1111-11111111111%d", i, i),
+			Name:      fmt.Sprintf("p%d", i),
+			Status:    models.StatusPending,
+			StartedAt: base.Add(time.Duration(i) * time.Minute),
+		})
+	}
+
+	t.Run("limit restricts page size", func(t *testing.T) {
+		w := doRequest(r, http.MethodGet, "/pipelines?limit=1", nil)
+		var list []models.Pipeline
+		json.Unmarshal(w.Body.Bytes(), &list)
+		if len(list) != 1 {
+			t.Fatalf("got %d pipelines, want 1", len(list))
+		}
+		if list[0].Name != "p2" {
+			t.Errorf("name = %q, want %q (most recently started first)", list[0].Name, "p2")
+		}
+	})
+
+	t.Run("offset skips earlier rows", func(t *testing.T) {
+		w := doRequest(r, http.MethodGet, "/pipelines?limit=1&offset=1", nil)
+		var list []models.Pipeline
+		json.Unmarshal(w.Body.Bytes(), &list)
+		if len(list) != 1 {
+			t.Fatalf("got %d pipelines, want 1", len(list))
+		}
+		if list[0].Name != "p1" {
+			t.Errorf("name = %q, want %q", list[0].Name, "p1")
+		}
+	})
+
+	t.Run("invalid limit falls back to default", func(t *testing.T) {
+		w := doRequest(r, http.MethodGet, "/pipelines?limit=notanumber", nil)
+		var list []models.Pipeline
+		json.Unmarshal(w.Body.Bytes(), &list)
+		if len(list) != 3 {
+			t.Errorf("got %d pipelines, want 3 (default page covers all rows)", len(list))
+		}
+	})
+
+	t.Run("limit above max is clamped", func(t *testing.T) {
+		w := doRequest(r, http.MethodGet, "/pipelines?limit=10000", nil)
+		var list []models.Pipeline
+		json.Unmarshal(w.Body.Bytes(), &list)
+		if len(list) != 3 {
+			t.Errorf("got %d pipelines, want 3", len(list))
+		}
+	})
+}
+
 func TestGetPipeline(t *testing.T) {
 	db := setupTestDB(t)
 	r := newTestRouter()
@@ -410,6 +467,24 @@ func TestGetPipelineErrors(t *testing.T) {
 		db.Create(&models.PipelineError{PipelineID: pipeline.ID, Message: "another error"})
 
 		w := doRequest(r, http.MethodGet, "/pipelines/"+pipeline.ID+"/errors", nil)
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+		}
+		var errs []models.PipelineError
+		json.Unmarshal(w.Body.Bytes(), &errs)
+		if len(errs) != 2 {
+			t.Errorf("got %d errors, want 2", len(errs))
+		}
+	})
+
+	t.Run("paginates results", func(t *testing.T) {
+		pipeline := models.Pipeline{ID: "01010101-0101-0101-0101-010101010101", Status: models.StatusFailed}
+		db.Create(&pipeline)
+		db.Create(&models.PipelineError{PipelineID: pipeline.ID, Message: "err a"})
+		db.Create(&models.PipelineError{PipelineID: pipeline.ID, Message: "err b"})
+		db.Create(&models.PipelineError{PipelineID: pipeline.ID, Message: "err c"})
+
+		w := doRequest(r, http.MethodGet, "/pipelines/"+pipeline.ID+"/errors?limit=2", nil)
 		if w.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
 		}
