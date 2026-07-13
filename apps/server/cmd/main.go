@@ -18,11 +18,12 @@ func main() {
 	database.Connect(cfg.DATABASEURL())
 	database.Migrate()
 	workerclient.Init(cfg.WorkerURL)
+	workerclient.InitInternalToken(cfg.WorkerInternalToken)
 	workerclient.InitExportBaseURL(cfg.ExportBaseURL)
 
 	router := gin.Default()
 
-	routes.SetupRoutes(router, cfg.APIKey)
+	routes.SetupRoutes(router, cfg.APIKey, cfg.ExportsDir)
 
 	router.Run(cfg.ServerAddr)
 }

@@ -20,9 +20,11 @@ type Config struct {
 	DBPort     string
 	DBSSLMode  string
 
-	WorkerAddr    string
-	WorkerURL     string
-	ExportBaseURL string
+	WorkerAddr          string
+	WorkerURL           string
+	WorkerInternalToken string
+	ExportBaseURL       string
+	ExportsDir          string
 }
 
 // Load reads a local .env file (if present) and then the process
@@ -31,7 +33,6 @@ func Load() Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on process environment variables")
 	}
-	fmt.Println("XYZ", getEnv("API_KEY", ""))
 
 	return Config{
 		ServerAddr: getEnv("SERVER_ADDR", "localhost:9090"),
@@ -44,9 +45,11 @@ func Load() Config {
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
-		WorkerAddr:    getEnv("WORKER_ADDR", "localhost:9091"),
-		WorkerURL:     getEnv("WORKER_URL", "http://localhost:9091"),
-		ExportBaseURL: getEnv("EXPORT_BASE_URL", getEnv("WORKER_URL", "http://localhost:9091")),
+		WorkerAddr:          getEnv("WORKER_ADDR", "localhost:9091"),
+		WorkerURL:           getEnv("WORKER_URL", "http://localhost:9091"),
+		WorkerInternalToken: getEnv("WORKER_INTERNAL_TOKEN", ""),
+		ExportBaseURL: getEnv("EXPORT_BASE_URL", "http://"+getEnv("SERVER_ADDR", "localhost:9090")),
+		ExportsDir:    getEnv("EXPORTS_DIR", "exports"),
 	}
 }
 

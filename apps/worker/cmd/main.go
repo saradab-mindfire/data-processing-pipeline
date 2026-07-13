@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker"
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/dataio"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/config"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/database"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/queue"
@@ -20,13 +21,14 @@ func main() {
 
 	cfg := config.Load()
 
+	dataio.InitExportsDir(cfg.ExportsDir)
 	database.Connect(cfg.DATABASEURL())
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	router := gin.Default()
-	worker.SetupRoutes(router)
+	worker.SetupRoutes(router, cfg.WorkerInternalToken)
 	go func() {
 		if err := router.Run(cfg.WorkerAddr); err != nil {
 			log.Fatalf("worker: internal API server failed: %v", err)
