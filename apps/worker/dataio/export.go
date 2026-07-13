@@ -8,9 +8,18 @@ import (
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/shared"
 )
 
-// ExportResult writes the transformed records to exports/<pipeline-id>.json.
+var exportsDir = "exports"
+
+// InitExportsDir sets the directory export files are written to.
+func InitExportsDir(dir string) {
+	if dir != "" {
+		exportsDir = dir
+	}
+}
+
+// ExportResult writes the transformed records to <exportsDir>/<pipeline-id>.json.
 func ExportResult(pipelineID string, records []shared.Record) {
-	dir := "exports"
+	dir := exportsDir
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		shared.SaveError(pipelineID, "could not create exports folder: "+err.Error())
 		return

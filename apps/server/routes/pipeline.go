@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/saradab-mindfire/data-processing-pipeline/apps/server/controllers"
@@ -9,10 +11,12 @@ import (
 
 const apiV1Prefix = "/api/v1"
 
-func SetupRoutes(router *gin.Engine, apiKey string) {
+func SetupRoutes(router *gin.Engine, apiKey string, exportsDir string) {
 	router.Use(middleware.RateLimit())
 
-	router.Static("/exports", "exports")
+	exports := router.Group("/exports")
+	exports.Use(middleware.RequireAPIKey(apiKey))
+	exports.StaticFS("/", http.Dir(exportsDir))
 
 	router.StaticFile("/docs", "docs/swagger-ui.html")
 	router.StaticFile("/docs/openapi.yaml", "docs/openapi.yaml")

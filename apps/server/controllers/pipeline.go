@@ -111,16 +111,30 @@ func UpdatePipeline(c *gin.Context) {
 		return
 	}
 
-	var input models.Pipeline
+	var input struct {
+		Name        *string `json:"name"`
+		Description *string `json:"description"`
+	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	input.ID = pipeline.ID
 
-	if err := database.Instance.Model(&pipeline).Updates(input).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	updates := map[string]any{}
+	if input.Name != nil {
+		updates["name"] = *input.Name
+		pipeline.Name = *input.Name
+	}
+	if input.Description != nil {
+		updates["description"] = *input.Description
+		pipeline.Description = *input.Description
+	}
+
+	if len(updates) > 0 {
+		if err := database.Instance.Model(&pipeline).Updates(updates).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, pipeline)

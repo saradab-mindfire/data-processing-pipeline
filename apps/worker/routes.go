@@ -4,16 +4,16 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/saradab-mindfire/data-processing-pipeline/apps/worker/middleware"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/models"
 	"github.com/saradab-mindfire/data-processing-pipeline/packages/queue"
 )
 
 // SetupRoutes configures routes for internal worker communication
 // Redis is avoided to eliminate external resource dependencies
-func SetupRoutes(router *gin.Engine) {
-	router.Static("/exports", "exports")
-
+func SetupRoutes(router *gin.Engine, internalToken string) {
 	pipelines := router.Group("/internal/pipelines")
+	pipelines.Use(middleware.RequireInternalToken(internalToken))
 	pipelines.POST("", enqueuePipeline)
 	pipelines.GET("/:id/progress", getPipelineProgress)
 	pipelines.POST("/:id/cancel", cancelPipeline)

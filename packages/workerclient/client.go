@@ -14,12 +14,18 @@ import (
 var (
 	baseURL       string
 	exportBaseURL string
+	internalToken string
 	httpClient    = &http.Client{Timeout: 10 * time.Second}
 )
 
 // Init sets the base URL used to reach the worker's internal API.
 func Init(url string) {
 	baseURL = url
+}
+
+// InitInternalToken sets the shared secret sent to the worker's internal API.
+func InitInternalToken(token string) {
+	internalToken = token
 }
 
 func InitExportBaseURL(url string) {
@@ -45,6 +51,7 @@ func Enqueue(ctx context.Context, pipelineID string, req models.PipelineRequest)
 		return err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Internal-Token", internalToken)
 
 	resp, err := httpClient.Do(httpReq)
 	if err != nil {
@@ -60,7 +67,13 @@ func Enqueue(ctx context.Context, pipelineID string, req models.PipelineRequest)
 
 // Get progress of the pipeline
 func GetProgress(pipelineID string) (processed, valid, invalid int, ok bool) {
-	resp, err := httpClient.Get(baseURL + "/internal/pipelines/" + pipelineID + "/progress")
+	req, err := http.NewRequest(http.MethodGet, baseURL+"/internal/pipelines/"+pipelineID+"/progress", nil)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	req.Header.Set("X-Internal-Token", internalToken)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, 0, 0, false
 	}
@@ -83,7 +96,13 @@ func GetProgress(pipelineID string) (processed, valid, invalid int, ok bool) {
 
 // Cancel the worker to cancel a running pipeline job
 func Cancel(pipelineID string) error {
-	resp, err := httpClient.Post(baseURL+"/internal/pipelines/"+pipelineID+"/cancel", "application/json", nil)
+	req, err := http.NewRequest(http.MethodPost, baseURL+"/internal/pipelines/"+pipelineID+"/cancel", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Internal-Token", internalToken)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
